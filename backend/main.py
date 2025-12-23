@@ -6,12 +6,14 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from datetime import datetime
-from config import get_settings
-from middleware.rate_limit import RateLimitMiddleware
-from routers import education, symptoms, contact
-from services.google_drive import drive_service
-from services.google_sheets import sheets_service
-from utils.logger import setup_logger
+
+# ✅ تغییر به relative imports
+from .config import get_settings
+from .middleware.rate_limit import RateLimitMiddleware
+from .routers import education, symptoms, contact
+from .services.google_drive import drive_service
+from .services.google_sheets import sheets_service
+from .utils.logger import setup_logger
 
 # Setup
 settings = get_settings()
@@ -128,4 +130,4 @@ if __name__ == "__main__":
         host=settings.HOST,
         port=settings.PORT,
         log_level=settings.LOG_LEVEL.lower()
-  )
+    )
