@@ -3,7 +3,7 @@ Logging configuration
 """
 import logging
 import sys
-from config import get_settings
+from ..config import get_settings
 
 def setup_logger(name: str = __name__) -> logging.Logger:
     """Setup and return a logger instance"""
