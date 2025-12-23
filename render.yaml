@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: patient-education-api
+    env: python
+    region: frankfurt  # یا oregon برای سرعت بهتر
+    plan: free  # یا starter برای production
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: GOOGLE_CREDENTIALS_JSON
+        sync: false
+      - key: MAIN_FOLDER_ID
+        sync: false
+      - key: GOOGLE_SHEET_ID
+        sync: false
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: MAX_REQUESTS_PER_MINUTE
+        value: 60
+      - key: LOG_LEVEL
+        value: INFO
