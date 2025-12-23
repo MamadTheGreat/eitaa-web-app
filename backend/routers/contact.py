@@ -2,8 +2,8 @@
 Contact endpoints - Contact information and support
 """
 from fastapi import APIRouter
-from models import ContactInfo
-from utils.logger import setup_logger
+from ..models import ContactInfo
+from ..utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
