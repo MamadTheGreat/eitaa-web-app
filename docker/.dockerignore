@@ -1,11 +1,12 @@
-__pycache__
-*.pyc
-*.pyo
-*.pyd
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
 .Python
 env/
 venv/
 .venv/
+ENV/
 .git/
 .gitignore
 .dockerignore
@@ -13,3 +14,10 @@ node_modules/
 .DS_Store
 *.log
 .env
+.pytest_cache/
+htmlcov/
+.coverage
+*.swp
+*.swo
+.vscode/
+.idea/
