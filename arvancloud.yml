@@ -1,0 +1,26 @@
+build:
+  python:
+    version: 3.11
+  command: |
+    pip install --upgrade pip
+    pip install -r requirements.txt
+
+run:
+  command: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+  port: 8000
+
+health_check:
+  path: /api/health
+  initial_delay: 30
+  timeout: 5
+  interval: 10
+
+resources:
+  memory: 512Mi
+  cpu: 500m
+
+environment:
+  - name: PORT
+    value: "8000"
+  - name: LOG_LEVEL
+    value: "INFO"
