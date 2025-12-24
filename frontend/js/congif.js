@@ -1,10 +1,17 @@
 /**
  * Frontend Configuration
+ * Updated for ArvanCloud deployment
  */
 
 const CONFIG = {
     // API Configuration
+    // ⚠️ این URL رو با URL واقعی بک‌اندت روی Render جایگزین کن
     API_URL: 'https://eitaa-web-app-final.onrender.com',
+    
+    // Alternative: استفاده از environment variable
+    // API_URL: typeof window !== 'undefined' && window.ENV?.API_URL 
+    //     ? window.ENV.API_URL 
+    //     : 'https://eitaa-web-app-final.onrender.com',
     
     // Cache Duration (milliseconds)
     CACHE_DURATION: 30 * 60 * 1000, // 30 minutes
@@ -70,10 +77,22 @@ const CONFIG = {
     },
     
     // Toast Configuration
-    TOAST_DURATION: 3000 // 3 seconds
+    TOAST_DURATION: 3000, // 3 seconds
+    
+    // Request timeout
+    REQUEST_TIMEOUT: 10000, // 10 seconds
+    
+    // Retry configuration
+    MAX_RETRIES: 3,
+    RETRY_DELAY: 1000 // 1 second
 };
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = CONFIG;
+}
+
+// Make available globally
+if (typeof window !== 'undefined') {
+    window.CONFIG = CONFIG;
 }
