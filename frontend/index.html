@@ -8,6 +8,7 @@
     <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone@7.23.5/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;900&display=swap" rel="stylesheet">
     <style>
         body {
@@ -21,7 +22,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        const { useState, useEffect } = React;
+        const { useState, useEffect, useRef } = React;
 
         // ==================== Configuration ====================
         const CONFIG = {
@@ -86,6 +87,143 @@
                 <div className={`fixed top-4 left-1/2 transform -translate-x-1/2 ${bgColor} text-white px-6 py-4 rounded-lg shadow-xl z-50 flex items-center gap-3`}>
                     <Icon />
                     <span className="font-bold">{message}</span>
+                </div>
+            );
+        };
+
+        // ==================== Chart Component ====================
+        const ChartComponent = ({ title, data, type, unit }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (!chartRef.current || !data || data.length === 0) return;
+
+                const ctx = chartRef.current.getContext('2d');
+
+                if (chartInstance.current) {
+                    chartInstance.current.destroy();
+                }
+
+                let datasets = [];
+                
+                if (type === 'blood_sugar') {
+                    const fastingData = data.filter(d => d.type === 'قند ناشتا');
+                    const postprandialData = data.filter(d => d.type === 'قند بعد از غذا');
+                    
+                    datasets = [
+                        {
+                            label: 'قند ناشتا',
+                            data: fastingData.map(d => ({ x: `${d.date} ${d.time}`, y: parseFloat(d.value) })),
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'قند بعد از غذا',
+                            data: postprandialData.map(d => ({ x: `${d.date} ${d.time}`, y: parseFloat(d.value) })),
+                            borderColor: 'rgb(16, 185, 129)',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            tension: 0.4
+                        }
+                    ];
+                } else if (type === 'blood_pressure') {
+                    const systolicData = data.map(d => {
+                        const values = d.value.split('/');
+                        return { x: `${d.date} ${d.time}`, y: parseFloat(values[0]) };
+                    });
+                    const diastolicData = data.map(d => {
+                        const values = d.value.split('/');
+                        return { x: `${d.date} ${d.time}`, y: parseFloat(values[1]) };
+                    });
+                    
+                    datasets = [
+                        {
+                            label: 'فشار سیستولیک',
+                            data: systolicData,
+                            borderColor: 'rgb(239, 68, 68)',
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'فشار دیاستولیک',
+                            data: diastolicData,
+                            borderColor: 'rgb(251, 146, 60)',
+                            backgroundColor: 'rgba(251, 146, 60, 0.1)',
+                            tension: 0.4
+                        }
+                    ];
+                } else if (type === 'weight') {
+                    datasets = [
+                        {
+                            label: 'وزن',
+                            data: data.map(d => ({ x: `${d.date} ${d.time}`, y: parseFloat(d.value) })),
+                            borderColor: 'rgb(139, 92, 246)',
+                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                            tension: 0.4
+                        }
+                    ];
+                }
+
+                chartInstance.current = new Chart(ctx, {
+                    type: 'line',
+                    data: { datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { font: { family: 'Vazirmatn', size: 14 } }
+                            },
+                            tooltip: {
+                                rtl: true,
+                                textDirection: 'rtl',
+                                titleFont: { family: 'Vazirmatn' },
+                                bodyFont: { family: 'Vazirmatn' }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'category',
+                                ticks: { 
+                                    font: { family: 'Vazirmatn', size: 11 },
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'تاریخ و زمان',
+                                    font: { family: 'Vazirmatn', size: 13 }
+                                }
+                            },
+                            y: {
+                                beginAtZero: false,
+                                ticks: { font: { family: 'Vazirmatn' } },
+                                title: {
+                                    display: true,
+                                    text: unit,
+                                    font: { family: 'Vazirmatn', size: 13 }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                return () => {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                };
+            }, [data, type, unit]);
+
+            return (
+                <div className="bg-white p-6 rounded-xl shadow-lg mb-6">
+                    <h4 className="text-xl font-bold text-gray-800 mb-4">{title}</h4>
+                    <div style={{ height: '300px' }}>
+                        <canvas ref={chartRef}></canvas>
+                    </div>
                 </div>
             );
         };
@@ -312,6 +450,10 @@
                 }
             };
 
+            const bloodSugarData = historyData.filter(d => d.type === 'قند ناشتا' || d.type === 'قند بعد از غذا');
+            const bloodPressureData = historyData.filter(d => d.type === 'فشار خون');
+            const weightData = historyData.filter(d => d.type === 'وزن');
+
             return (
                 <div className="min-h-screen bg-gradient-to-br from-green-50 to-green-100 p-4 md:p-8">
                     <div className="max-w-2xl mx-auto">
@@ -327,13 +469,13 @@
                                     <button onClick={() => setSymptomType('blood_pressure')} className="w-full bg-white p-6 rounded-xl shadow-md hover:shadow-xl text-right text-lg font-bold">💓 فشار خون</button>
                                     <button onClick={() => setSymptomType('weight')} className="w-full bg-white p-6 rounded-xl shadow-md hover:shadow-xl text-right text-lg font-bold">⚖️ وزن</button>
                                     <button onClick={() => { setShowHistory(true); fetchHistory(null); }} className="w-full bg-white p-6 rounded-xl shadow-md hover:shadow-xl text-right text-lg font-bold flex items-center gap-3">
-                                        <Icons.TrendingUp /> تاریخچه علائم
+                                        <Icons.TrendingUp /> نمودار علائم
                                     </button>
                                 </div>
                             </>
                         ) : showHistory ? (
                             <>
-                                <h3 className="text-xl md:text-2xl font-bold text-green-900 mb-6">تاریخچه علائم</h3>
+                                <h3 className="text-xl md:text-2xl font-bold text-green-900 mb-6">نمودار علائم ثبت شده</h3>
                                 {loading ? (
                                     <div className="text-center py-12">
                                         <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-green-500 border-t-transparent"></div>
@@ -342,16 +484,31 @@
                                 ) : historyData.length === 0 ? (
                                     <p className="text-center text-gray-600 py-12">هیچ داده‌ای یافت نشد</p>
                                 ) : (
-                                    <div className="space-y-3">
-                                        {historyData.map((item, index) => (
-                                            <div key={index} className="bg-white p-4 rounded-lg shadow-md">
-                                                <div className="flex justify-between items-center">
-                                                    <span className="font-bold text-gray-800">{item.type}</span>
-                                                    <span className="text-green-600 font-bold">{item.value}</span>
-                                                </div>
-                                                <div className="text-sm text-gray-500 mt-2">{item.date} - {item.time}</div>
-                                            </div>
-                                        ))}
+                                    <div className="space-y-6">
+                                        {bloodSugarData.length > 0 && (
+                                            <ChartComponent 
+                                                title="نمودار قند خون" 
+                                                data={bloodSugarData} 
+                                                type="blood_sugar" 
+                                                unit="mg/dL"
+                                            />
+                                        )}
+                                        {bloodPressureData.length > 0 && (
+                                            <ChartComponent 
+                                                title="نمودار فشار خون" 
+                                                data={bloodPressureData} 
+                                                type="blood_pressure" 
+                                                unit="mmHg"
+                                            />
+                                        )}
+                                        {weightData.length > 0 && (
+                                            <ChartComponent 
+                                                title="نمودار وزن" 
+                                                data={weightData} 
+                                                type="weight" 
+                                                unit="kg"
+                                            />
+                                        )}
                                     </div>
                                 )}
                                 <button onClick={() => setShowHistory(false)} className="mt-6 bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-bold w-full">بازگشت</button>
