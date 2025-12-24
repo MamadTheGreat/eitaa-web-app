@@ -28,10 +28,10 @@
         const CONFIG = {
             API_URL: 'https://eitaa-web-app-final.onrender.com',
             VALIDATION: {
-                BLOOD_SUGAR: { min: 20, max: 600 },
-                BLOOD_PRESSURE_SYSTOLIC: { min: 70, max: 250 },
-                BLOOD_PRESSURE_DIASTOLIC: { min: 40, max: 150 },
-                WEIGHT: { min: 20, max: 300 }
+                BLOOD_SUGAR: { min: 20, max: 1500 },
+                BLOOD_PRESSURE_SYSTOLIC: { min: 70, max: 300 },
+                BLOOD_PRESSURE_DIASTOLIC: { min: 30, max: 200 },
+                WEIGHT: { min: 10, max: 200 }
             },
             DISEASES: [
                 { id: 'diabetes', name: 'دیابت نوع ۲', icon: '🩸' },
@@ -59,19 +59,19 @@
         const Validators = {
             validateBloodSugar: (value) => {
                 const num = parseFloat(value);
-                return (isNaN(num) || num < 20 || num > 600) ? 'مقدار قند باید بین 20 تا 600 باشد' : null;
+                return (isNaN(num) || num < 20 || num > 1500) ? 'مقدار قند باید بین 20 تا 1500 باشد' : null;
             },
             validateBloodPressure: (systolic, diastolic) => {
                 const sys = parseFloat(systolic);
                 const dia = parseFloat(diastolic);
-                if (isNaN(sys) || sys < 70 || sys > 250) return 'فشار سیستولیک باید بین 70 تا 250 باشد';
-                if (isNaN(dia) || dia < 40 || dia > 150) return 'فشار دیاستولیک باید بین 40 تا 150 باشد';
+                if (isNaN(sys) || sys < 70 || sys > 300) return 'فشار سیستولیک باید بین 70 تا 300 باشد';
+                if (isNaN(dia) || dia < 30 || dia > 200) return 'فشار دیاستولیک باید بین 30 تا 200 باشد';
                 if (sys <= dia) return 'فشار سیستولیک باید بزرگتر از دیاستولیک باشد';
                 return null;
             },
             validateWeight: (value) => {
                 const num = parseFloat(value);
-                return (isNaN(num) || num < 20 || num > 300) ? 'وزن باید بین 20 تا 300 کیلوگرم باشد' : null;
+                return (isNaN(num) || num < 10 || num > 200) ? 'وزن باید بین 10 تا 200 کیلوگرم باشد' : null;
             }
         };
 
@@ -111,22 +111,96 @@
                     const fastingData = data.filter(d => d.type === 'قند ناشتا');
                     const postprandialData = data.filter(d => d.type === 'قند بعد از غذا');
                     
+                    // ترتیب داده‌ها بر اساس تاریخ
+                    const sortData = (arr) => arr.sort((a, b) => {
+                        const dateA = new Date(a.date.split('-').reverse().join('-') + ' ' + a.time);
+                        const dateB = new Date(b.date.split('-').reverse().join('-') + ' ' + b.time);
+                        return dateA - dateB;
+                    });
+                    
+                    const sortedFasting = sortData([...fastingData]);
+                    const sortedPostprandial = sortData([...postprandialData]);
+                    
                     datasets = [
                         {
                             label: 'قند ناشتا',
-                            data: fastingData.map(d => ({ x: `${d.date} ${d.time}`, y: parseFloat(d.value) })),
+                            data: sortedFasting.map(d => parseFloat(d.value)),
                             borderColor: 'rgb(59, 130, 246)',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
                             tension: 0.4
                         },
                         {
                             label: 'قند بعد از غذا',
-                            data: postprandialData.map(d => ({ x: `${d.date} ${d.time}`, y: parseFloat(d.value) })),
+                            data: sortedPostprandial.map(d => parseFloat(d.value)),
                             borderColor: 'rgb(16, 185, 129)',
                             backgroundColor: 'rgba(16, 185, 129, 0.1)',
                             tension: 0.4
                         }
                     ];
+                    
+                    // استفاده از labels مشترک
+                    const allLabels = [...new Set([
+                        ...sortedFasting.map(d => `${d.date} ${d.time}`),
+                        ...sortedPostprandial.map(d => `${d.date} ${d.time}`)
+                    ])].sort();
+                    
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'line',
+                        data: { 
+                            labels: allLabels,
+                            datasets: datasets.map(ds => ({
+                                ...ds,
+                                data: allLabels.map(label => {
+                                    const sourceData = ds.label === 'قند ناشتا' ? sortedFasting : sortedPostprandial;
+                                    const point = sourceData.find(d => `${d.date} ${d.time}` === label);
+                                    return point ? parseFloat(point.value) : null;
+                                }),
+                                spanGaps: true
+                            }))
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: true,
+                                    position: 'top',
+                                    labels: { font: { family: 'Vazirmatn', size: 14 } }
+                                },
+                                tooltip: {
+                                    rtl: true,
+                                    textDirection: 'rtl',
+                                    titleFont: { family: 'Vazirmatn' },
+                                    bodyFont: { family: 'Vazirmatn' }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    type: 'category',
+                                    ticks: { 
+                                        font: { family: 'Vazirmatn', size: 11 },
+                                        maxRotation: 45,
+                                        minRotation: 45
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'تاریخ و زمان',
+                                        font: { family: 'Vazirmatn', size: 13 }
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: false,
+                                    ticks: { font: { family: 'Vazirmatn' } },
+                                    title: {
+                                        display: true,
+                                        text: unit,
+                                        font: { family: 'Vazirmatn', size: 13 }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                    return;
                 } else if (type === 'blood_pressure') {
                     const systolicData = data.map(d => {
                         const values = d.value.split('/');
@@ -627,7 +701,15 @@
         // ==================== Main App Component ====================
         const App = () => {
             const [currentPage, setCurrentPage] = useState('home');
-            const [userId] = useState(() => 'user_' + Math.random().toString(36).substr(2, 9));
+            const [userId] = useState(() => {
+                // بررسی localStorage برای user_id
+                let storedUserId = localStorage.getItem('patient_user_id');
+                if (!storedUserId) {
+                    storedUserId = 'user_' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('patient_user_id', storedUserId);
+                }
+                return storedUserId;
+            });
             const [toast, setToast] = useState(null);
 
             const showToast = (message, type = 'info') => setToast({ message, type });
