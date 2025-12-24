@@ -35,22 +35,22 @@ class SymptomData(BaseModel):
                 systolic = float(parts[0])
                 diastolic = float(parts[1])
                 
-                if not (70 <= systolic <= 250):
-                    raise ValueError('فشار سیستولیک باید بین 70 تا 250 باشد')
-                if not (40 <= diastolic <= 150):
-                    raise ValueError('فشار دیاستولیک باید بین 40 تا 150 باشد')
+                if not (70 <= systolic <= 300):
+                    raise ValueError('فشار سیستولیک باید بین 70 تا 300 باشد')
+                if not (30 <= diastolic <= 200):
+                    raise ValueError('فشار دیاستولیک باید بین 30 تا 200 باشد')
                 if systolic <= diastolic:
                     raise ValueError('فشار سیستولیک باید بزرگتر از دیاستولیک باشد')
             
             elif symptom_type in ['قند ناشتا', 'قند بعد از غذا']:
                 value_num = float(v)
-                if not (20 <= value_num <= 600):
-                    raise ValueError('مقدار قند باید بین 20 تا 600 باشد')
+                if not (20 <= value_num <= 1500):
+                    raise ValueError('مقدار قند باید بین 20 تا 1500 باشد')
             
             elif symptom_type == 'وزن':
                 weight = float(v)
-                if not (20 <= weight <= 300):
-                    raise ValueError('وزن باید بین 20 تا 300 کیلوگرم باشد')
+                if not (10 <= weight <= 200):
+                    raise ValueError('وزن باید بین 10 تا 200 کیلوگرم باشد')
                     
         except (ValueError, IndexError) as e:
             raise ValueError(f'مقدار نامعتبر: {str(e)}')
