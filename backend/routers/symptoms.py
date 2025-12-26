@@ -73,13 +73,13 @@ async def get_symptom_types():
                 "id": "fasting_glucose",
                 "name": "قند ناشتا",
                 "unit": "mg/dL",
-                "range": {"min": 20, "max": 600}
+                "range": {"min": 20, "max": 1500}
             },
             {
                 "id": "postprandial_glucose",
                 "name": "قند بعد از غذا",
                 "unit": "mg/dL",
-                "range": {"min": 20, "max": 600}
+                "range": {"min": 20, "max": 1500}
             },
             {
                 "id": "blood_pressure",
@@ -87,15 +87,15 @@ async def get_symptom_types():
                 "unit": "mmHg",
                 "format": "systolic/diastolic",
                 "range": {
-                    "systolic": {"min": 70, "max": 250},
-                    "diastolic": {"min": 40, "max": 150}
+                    "systolic": {"min": 70, "max": 300},
+                    "diastolic": {"min": 30, "max": 200}
                 }
             },
             {
                 "id": "weight",
                 "name": "وزن",
                 "unit": "kg",
-                "range": {"min": 20, "max": 300}
+                "range": {"min": 10, "max": 200}
             }
         ]
     }
