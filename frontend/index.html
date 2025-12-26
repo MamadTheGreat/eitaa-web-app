@@ -175,12 +175,6 @@
                     chartInstance.current.destroy();
                 }
 
-                // دسترسی به ChartDataLabels از window
-                const ChartDataLabels = window.ChartDataLabels;
-                if (ChartDataLabels) {
-                    Chart.register(ChartDataLabels);
-                }
-
                 let datasets = [];
                 
                 if (type === 'blood_sugar') {
@@ -201,29 +195,19 @@
                             label: 'قند ناشتا',
                             data: sortedFasting.map(d => parseFloat(d.value)),
                             borderColor: 'rgb(59, 130, 246)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.4,
-                            datalabels: {
-                                color: 'rgb(59, 130, 246)',
-                                font: { family: 'Vazirmatn', size: 11, weight: 'bold' },
-                                anchor: 'end',
-                                align: 'top',
-                                offset: 4
-                            }
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.4
                         },
                         {
                             label: 'قند بعد از غذا',
                             data: sortedPostprandial.map(d => parseFloat(d.value)),
                             borderColor: 'rgb(16, 185, 129)',
-                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                            tension: 0.4,
-                            datalabels: {
-                                color: 'rgb(16, 185, 129)',
-                                font: { family: 'Vazirmatn', size: 11, weight: 'bold' },
-                                anchor: 'end',
-                                align: 'bottom',
-                                offset: 4
-                            }
+                            backgroundColor: 'rgba(16, 185, 129, 0.5)',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.4
                         }
                     ];
                     
@@ -234,6 +218,7 @@
                     
                     chartInstance.current = new Chart(ctx, {
                         type: 'line',
+                        plugins: [window.ChartDataLabels],
                         data: { 
                             labels: allLabels,
                             datasets: datasets.map(ds => ({
@@ -250,6 +235,25 @@
                             responsive: true,
                             maintainAspectRatio: false,
                             plugins: {
+                                datalabels: {
+                                    display: true,
+                                    color: function(context) {
+                                        return context.dataset.borderColor;
+                                    },
+                                    font: {
+                                        family: 'Vazirmatn',
+                                        size: 11,
+                                        weight: 'bold'
+                                    },
+                                    anchor: 'end',
+                                    align: function(context) {
+                                        return context.datasetIndex === 0 ? 'top' : 'bottom';
+                                    },
+                                    offset: 4,
+                                    formatter: function(value) {
+                                        return value ? Math.round(value) : '';
+                                    }
+                                },
                                 legend: {
                                     display: true,
                                     position: 'top',
@@ -260,17 +264,13 @@
                                     textDirection: 'rtl',
                                     titleFont: { family: 'Vazirmatn' },
                                     bodyFont: { family: 'Vazirmatn' }
-                                },
-                                datalabels: {
-                                    display: true,
-                                    formatter: (value) => value ? value : ''
                                 }
                             },
                             scales: {
                                 x: {
                                     type: 'category',
                                     ticks: { 
-                                        font: { family: 'Vazirmatn', size: 11 },
+                                        font: { family: 'Vazirmatn', size: 10 },
                                         maxRotation: 45,
                                         minRotation: 45
                                     },
@@ -308,31 +308,19 @@
                             label: 'فشار سیستولیک',
                             data: systolicData,
                             borderColor: 'rgb(239, 68, 68)',
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            tension: 0.4,
-                            datalabels: {
-                                color: 'rgb(239, 68, 68)',
-                                font: { family: 'Vazirmatn', size: 11, weight: 'bold' },
-                                anchor: 'end',
-                                align: 'top',
-                                offset: 4,
-                                formatter: (value) => value.y
-                            }
+                            backgroundColor: 'rgba(239, 68, 68, 0.5)',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.4
                         },
                         {
                             label: 'فشار دیاستولیک',
                             data: diastolicData,
                             borderColor: 'rgb(251, 146, 60)',
-                            backgroundColor: 'rgba(251, 146, 60, 0.1)',
-                            tension: 0.4,
-                            datalabels: {
-                                color: 'rgb(251, 146, 60)',
-                                font: { family: 'Vazirmatn', size: 11, weight: 'bold' },
-                                anchor: 'end',
-                                align: 'bottom',
-                                offset: 4,
-                                formatter: (value) => value.y
-                            }
+                            backgroundColor: 'rgba(251, 146, 60, 0.5)',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.4
                         }
                     ];
                 } else if (type === 'weight') {
@@ -341,27 +329,41 @@
                             label: 'وزن',
                             data: data.map(d => ({ x: `${d.date} ${d.time}`, y: parseFloat(d.value) })),
                             borderColor: 'rgb(139, 92, 246)',
-                            backgroundColor: 'rgba(139, 92, 246, 0.1)',
-                            tension: 0.4,
-                            datalabels: {
-                                color: 'rgb(139, 92, 246)',
-                                font: { family: 'Vazirmatn', size: 11, weight: 'bold' },
-                                anchor: 'end',
-                                align: 'top',
-                                offset: 4,
-                                formatter: (value) => value.y
-                            }
+                            backgroundColor: 'rgba(139, 92, 246, 0.5)',
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            tension: 0.4
                         }
                     ];
                 }
 
                 chartInstance.current = new Chart(ctx, {
                     type: 'line',
+                    plugins: [window.ChartDataLabels],
                     data: { datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         plugins: {
+                            datalabels: {
+                                display: true,
+                                color: function(context) {
+                                    return context.dataset.borderColor;
+                                },
+                                font: {
+                                    family: 'Vazirmatn',
+                                    size: 11,
+                                    weight: 'bold'
+                                },
+                                anchor: 'end',
+                                align: function(context) {
+                                    return context.datasetIndex === 0 ? 'top' : 'bottom';
+                                },
+                                offset: 4,
+                                formatter: function(value) {
+                                    return value && value.y ? Math.round(value.y) : '';
+                                }
+                            },
                             legend: {
                                 display: true,
                                 position: 'top',
@@ -372,16 +374,13 @@
                                 textDirection: 'rtl',
                                 titleFont: { family: 'Vazirmatn' },
                                 bodyFont: { family: 'Vazirmatn' }
-                            },
-                            datalabels: {
-                                display: true
                             }
                         },
                         scales: {
                             x: {
                                 type: 'category',
                                 ticks: { 
-                                    font: { family: 'Vazirmatn', size: 11 },
+                                    font: { family: 'Vazirmatn', size: 10 },
                                     maxRotation: 45,
                                     minRotation: 45
                                 },
@@ -538,20 +537,25 @@
                             <>
                                 <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-4">{selectedVideo.name}</h3>
                                 <div className="bg-white rounded-xl p-4 shadow-lg mb-4">
-                                    <div className="relative" style={{ paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+                                    <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
                                         <iframe 
-                                            src={selectedVideo.url} 
+                                            src={`${selectedVideo.url}?autoplay=0`}
                                             className="absolute top-0 left-0 w-full h-full rounded-lg" 
-                                            allow="autoplay; fullscreen; picture-in-picture" 
-                                            allowFullScreen
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
+                                            allowFullScreen={true}
                                             webkitallowfullscreen="true"
                                             mozallowfullscreen="true"
+                                            msallowfullscreen="true"
                                             title={selectedVideo.name}
                                             style={{ border: 'none' }}
+                                            frameBorder="0"
                                         ></iframe>
                                     </div>
+                                    <div className="mt-4 text-center text-sm text-gray-600">
+                                        برای تماشای فول‌اسکرین، روی آیکون فول‌اسکرین در پخش‌کننده کلیک کنید
+                                    </div>
                                 </div>
-                                <button onClick={() => setSelectedVideo(null)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-bold">
+                                <button onClick={() => setSelectedVideo(null)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-bold w-full">
                                     بازگشت به لیست
                                 </button>
                             </>
