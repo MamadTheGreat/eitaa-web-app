@@ -110,60 +110,106 @@
                 if (!containerRef.current) return;
                 
                 try {
+                    // استفاده از html2canvas که از window بارگذاری شده
+                    const html2canvas = window.html2canvas;
+                    if (!html2canvas) {
+                        alert('خطا: ابزار دانلود بارگذاری نشده است');
+                        return;
+                    }
+                    
                     const canvas = await html2canvas(containerRef.current, {
                         backgroundColor: '#ffffff',
-                        scale: 2
+                        scale: 2,
+                        logging: false
                     });
                     
                     const imgData = canvas.toDataURL('image/png');
+                    
+                    // استفاده از jsPDF که از window بارگذاری شده
                     const { jsPDF } = window.jspdf;
+                    if (!jsPDF) {
+                        alert('خطا: ابزار PDF بارگذاری نشده است');
+                        return;
+                    }
+                    
                     const pdf = new jsPDF({
-                        orientation: 'landscape',
+                        orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
                         unit: 'px',
                         format: [canvas.width, canvas.height]
                     });
                     
                     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-                    pdf.save(`${title}.pdf`);
+                    pdf.save(`${title.replace(/\s+/g, '_')}.pdf`);
                 } catch (error) {
                     console.error('خطا در دانلود:', error);
-                    alert('خطا در دانلود نمودار');
+                    alert('خطا در دانلود نمودار. لطفاً دوباره تلاش کنید.');
                 }
             };
 
             const printChart = () => {
                 if (!chartInstance.current) return;
-                const imageUrl = chartInstance.current.toBase64Image();
-                const printWindow = window.open('', '_blank');
-                printWindow.document.write(`
-                    <html dir="rtl">
-                        <head>
-                            <title>${title}</title>
-                            <style>
-                                body { 
-                                    font-family: 'Vazirmatn', sans-serif; 
-                                    text-align: center; 
-                                    padding: 20px;
-                                }
-                                h1 { margin-bottom: 20px; }
-                                img { max-width: 100%; height: auto; }
-                            </style>
-                        </head>
-                        <body>
-                            <h1>${title}</h1>
-                            <img src="${imageUrl}" />
-                            <script>
-                                window.onload = function() {
-                                    window.print();
+                
+                try {
+                    const imageUrl = chartInstance.current.toBase64Image();
+                    const printWindow = window.open('', '_blank');
+                    
+                    if (!printWindow) {
+                        alert('لطفاً پاپ‌آپ را در مرورگر خود مجاز کنید');
+                        return;
+                    }
+                    
+                    printWindow.document.write(`
+                        <html dir="rtl">
+                            <head>
+                                <title>${title}</title>
+                                <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+                                <style>
+                                    * { margin: 0; padding: 0; box-sizing: border-box; }
+                                    body { 
+                                        font-family: 'Vazirmatn', sans-serif; 
+                                        text-align: center; 
+                                        padding: 20px;
+                                        background: white;
+                                    }
+                                    h1 { 
+                                        margin-bottom: 30px;
+                                        color: #1f2937;
+                                        font-size: 24px;
+                                    }
+                                    img { 
+                                        max-width: 100%; 
+                                        height: auto;
+                                        display: block;
+                                        margin: 0 auto;
+                                    }
+                                    @media print {
+                                        body { padding: 0; }
+                                        h1 { page-break-after: avoid; }
+                                        img { page-break-inside: avoid; }
+                                    }
+                                </style>
+                            </head>
+                            <body>
+                                <h1>${title}</h1>
+                                <img src="${imageUrl}" alt="${title}" />
+                                <script>
+                                    window.onload = function() {
+                                        setTimeout(function() {
+                                            window.print();
+                                        }, 250);
+                                    };
                                     window.onafterprint = function() {
                                         window.close();
                                     };
-                                };
-                            <\/script>
-                        </body>
-                    </html>
-                `);
-                printWindow.document.close();
+                                <\/script>
+                            </body>
+                        </html>
+                    `);
+                    printWindow.document.close();
+                } catch (error) {
+                    console.error('خطا در پرینت:', error);
+                    alert('خطا در پرینت نمودار. لطفاً دوباره تلاش کنید.');
+                }
             };
 
             useEffect(() => {
@@ -537,22 +583,29 @@
                             <>
                                 <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-4">{selectedVideo.name}</h3>
                                 <div className="bg-white rounded-xl p-4 shadow-lg mb-4">
-                                    <div className="relative w-full" style={{ paddingTop: '56.25%' }}>
+                                    <div className="relative w-full overflow-hidden rounded-lg" style={{ paddingTop: '56.25%' }}>
                                         <iframe 
-                                            src={`${selectedVideo.url}?autoplay=0`}
-                                            className="absolute top-0 left-0 w-full h-full rounded-lg" 
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; fullscreen" 
-                                            allowFullScreen={true}
-                                            webkitallowfullscreen="true"
-                                            mozallowfullscreen="true"
-                                            msallowfullscreen="true"
+                                            src={selectedVideo.url}
+                                            className="absolute top-0 left-0 w-full h-full" 
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                                            allowFullScreen
                                             title={selectedVideo.name}
                                             style={{ border: 'none' }}
-                                            frameBorder="0"
+                                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
                                         ></iframe>
                                     </div>
-                                    <div className="mt-4 text-center text-sm text-gray-600">
-                                        برای تماشای فول‌اسکرین، روی آیکون فول‌اسکرین در پخش‌کننده کلیک کنید
+                                    <div className="mt-4 flex flex-col gap-2">
+                                        <a 
+                                            href={`https://drive.google.com/file/d/${selectedVideo.id}/view`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 font-bold text-center transition-all"
+                                        >
+                                            📱 باز کردن در Google Drive (برای فول‌اسکرین در موبایل)
+                                        </a>
+                                        <p className="text-sm text-gray-600 text-center">
+                                            برای تماشای فول‌اسکرین در موبایل، روی دکمه بالا کلیک کنید
+                                        </p>
                                     </div>
                                 </div>
                                 <button onClick={() => setSelectedVideo(null)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-bold w-full">
