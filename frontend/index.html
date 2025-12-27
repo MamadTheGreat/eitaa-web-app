@@ -64,6 +64,7 @@
             Download: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>,
             Printer: () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
         };
+
         // ==================== Validators ====================
         const Validators = {
             validateBloodSugar: (value) => {
@@ -81,9 +82,65 @@
             validateWeight: (value) => {
                 const num = parseFloat(value);
                 return (isNaN(num) || num < 10 || num > 200) ? 'وزن باید بین 10 تا 200 کیلوگرم باشد' : null;
+            },
+            checkHealthWarnings: (type, value) => {
+                const warnings = [];
+                
+                if (type === 'قند ناشتا') {
+                    const glucose = parseFloat(value);
+                    if (glucose < 70) {
+                        warnings.push({
+                            level: 'warning',
+                            message: '⚠️ هشدار: قند خون شما پایین است (کمتر از 70). لطفاً یک خوراکی شیرین مصرف کنید و در صورت ادامه علائم با پزشک مشورت نمایید.'
+                        });
+                    } else if (glucose >= 250) {
+                        warnings.push({
+                            level: 'danger',
+                            message: '🚨 اخطار جدی: قند خون ناشتا شما بسیار بالا است (بیش از 250). فوراً با پزشک خود تماس بگیرید و دارو‌های خود را بررسی کنید.'
+                        });
+                    } else if (glucose >= 180) {
+                        warnings.push({
+                            level: 'alert',
+                            message: '⚠️ اخطار: قند خون ناشتا شما بالا است (بیش از 180). لطفاً رژیم غذایی و دارو‌های خود را بررسی کرده و با پزشک مشورت کنید.'
+                        });
+                    } else if (glucose > 125) {
+                        warnings.push({
+                            level: 'warning',
+                            message: '⚠️ هشدار: قند خون ناشتا شما کمی بالاتر از حد طبیعی است (بیش از 125). به رژیم غذایی و ورزش خود توجه بیشتری داشته باشید.'
+                        });
+                    }
+                } else if (type === 'قند بعد از غذا') {
+                    const glucose = parseFloat(value);
+                    if (glucose >= 300) {
+                        warnings.push({
+                            level: 'danger',
+                            message: '🚨 اخطار جدی: قند خون بعد از غذا بسیار بالا است (بیش از 300). فوراً با پزشک خود تماس بگیرید.'
+                        });
+                    } else if (glucose > 250) {
+                        warnings.push({
+                            level: 'warning',
+                            message: '⚠️ هشدار: قند خون بعد از غذا بالا است (بیش از 250). لطفاً به میزان کربوهیدرات و دارو‌های خود توجه کنید.'
+                        });
+                    }
+                } else if (type === 'فشار خون') {
+                    const parts = value.split('/');
+                    const systolic = parseFloat(parts[0]);
+                    if (systolic >= 180) {
+                        warnings.push({
+                            level: 'danger',
+                            message: '🚨 اخطار جدی: فشار خون سیستولی شما بسیار بالا است (بیش از 180). فوراً با پزشک خود تماس بگیرید و به استراحت بپردازید.'
+                        });
+                    } else if (systolic > 140) {
+                        warnings.push({
+                            level: 'warning',
+                            message: '⚠️ هشدار: فشار خون سیستولی شما بالاتر از حد طبیعی است (بیش از 140). لطفاً استرس را کاهش دهید و دارو‌های خود را منظم مصرف کنید.'
+                        });
+                    }
+                }
+                
+                return warnings;
             }
         };
-
         // ==================== Toast Component ====================
         const Toast = ({ message, type, onClose }) => {
             useEffect(() => {
@@ -110,7 +167,6 @@
                 if (!containerRef.current) return;
                 
                 try {
-                    // استفاده از html2canvas که از window بارگذاری شده
                     const html2canvas = window.html2canvas;
                     if (!html2canvas) {
                         alert('خطا: ابزار دانلود بارگذاری نشده است');
@@ -125,7 +181,6 @@
                     
                     const imgData = canvas.toDataURL('image/png');
                     
-                    // استفاده از jsPDF که از window بارگذاری شده
                     const { jsPDF } = window.jspdf;
                     if (!jsPDF) {
                         alert('خطا: ابزار PDF بارگذاری نشده است');
@@ -140,75 +195,12 @@
                     
                     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
                     pdf.save(`${title.replace(/\s+/g, '_')}.pdf`);
+                    
+                    // نمایش پیام موفقیت
+                    alert(`✅ ${title} دانلود شد`);
                 } catch (error) {
                     console.error('خطا در دانلود:', error);
                     alert('خطا در دانلود نمودار. لطفاً دوباره تلاش کنید.');
-                }
-            };
-
-            const printChart = () => {
-                if (!chartInstance.current) return;
-                
-                try {
-                    const imageUrl = chartInstance.current.toBase64Image();
-                    const printWindow = window.open('', '_blank');
-                    
-                    if (!printWindow) {
-                        alert('لطفاً پاپ‌آپ را در مرورگر خود مجاز کنید');
-                        return;
-                    }
-                    
-                    printWindow.document.write(`
-                        <html dir="rtl">
-                            <head>
-                                <title>${title}</title>
-                                <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
-                                <style>
-                                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                                    body { 
-                                        font-family: 'Vazirmatn', sans-serif; 
-                                        text-align: center; 
-                                        padding: 20px;
-                                        background: white;
-                                    }
-                                    h1 { 
-                                        margin-bottom: 30px;
-                                        color: #1f2937;
-                                        font-size: 24px;
-                                    }
-                                    img { 
-                                        max-width: 100%; 
-                                        height: auto;
-                                        display: block;
-                                        margin: 0 auto;
-                                    }
-                                    @media print {
-                                        body { padding: 0; }
-                                        h1 { page-break-after: avoid; }
-                                        img { page-break-inside: avoid; }
-                                    }
-                                </style>
-                            </head>
-                            <body>
-                                <h1>${title}</h1>
-                                <img src="${imageUrl}" alt="${title}" />
-                                <script>
-                                    window.onload = function() {
-                                        setTimeout(function() {
-                                            window.print();
-                                        }, 250);
-                                    };
-                                    window.onafterprint = function() {
-                                        window.close();
-                                    };
-                                <\/script>
-                            </body>
-                        </html>
-                    `);
-                    printWindow.document.close();
-                } catch (error) {
-                    console.error('خطا در پرینت:', error);
-                    alert('خطا در پرینت نمودار. لطفاً دوباره تلاش کنید.');
                 }
             };
 
@@ -222,6 +214,7 @@
                 }
 
                 let datasets = [];
+                
                 if (type === 'blood_sugar') {
                     const fastingData = data.filter(d => d.type === 'قند ناشتا');
                     const postprandialData = data.filter(d => d.type === 'قند بعد از غذا');
@@ -459,22 +452,13 @@
                 <div ref={containerRef} className="bg-white p-6 rounded-xl shadow-lg mb-6">
                     <div className="flex justify-between items-center mb-4">
                         <h4 className="text-xl font-bold text-gray-800">{title}</h4>
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={downloadChart}
-                                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2 text-sm"
-                            >
-                                <Icons.Download />
-                                دانلود PDF
-                            </button>
-                            <button 
-                                onClick={printChart}
-                                className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-all flex items-center gap-2 text-sm"
-                            >
-                                <Icons.Printer />
-                                پرینت
-                            </button>
-                        </div>
+                        <button 
+                            onClick={downloadChart}
+                            className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2"
+                            title="دانلود PDF"
+                        >
+                            <Icons.Download />
+                        </button>
                     </div>
                     <div style={{ height: '400px' }}>
                         <canvas ref={chartRef}></canvas>
@@ -565,83 +549,7 @@
                             <>
                                 <h2 className="text-2xl md:text-3xl font-bold text-blue-900 mb-6 md:mb-8">آموزش بیمار</h2>
                                 <div className="space-y-4">
-                                    {CONFIG.DISEASES.map(disease => (
-                                        <button
-                                            key={disease.id}
-                                            onClick={() => { setSelectedDisease(disease); fetchVideos(disease.id); }}
-                                            className="w-full bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all text-right flex items-center gap-4"
-                                        >
-                                            <span className="text-4xl">{disease.icon}</span>
-                                            <span className="text-lg md:text-xl font-bold text-blue-900">{disease.name}</span>
-                                            <span className="mr-auto"><Icons.ArrowLeft /></span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </>
-                        ) : selectedVideo ? (
-                            <>
-                              <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-4">{selectedVideo.name}</h3>
-                                <div className="bg-white rounded-xl p-4 shadow-lg mb-4">
-                                    <div className="relative w-full overflow-hidden rounded-lg" style={{ paddingTop: '56.25%' }}>
-                                        <iframe 
-                                            src={selectedVideo.url}
-                                            className="absolute top-0 left-0 w-full h-full" 
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                                            allowFullScreen
-                                            title={selectedVideo.name}
-                                            style={{ border: 'none' }}
-                                            sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                                        ></iframe>
-                                    </div>
-                                </div>
-                                <button onClick={() => setSelectedVideo(null)} className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-bold w-full">
-                                    بازگشت به لیست
-                                </button>
-                            </>
-                        ) : (
-                            <>
-                                <h3 className="text-xl md:text-2xl font-bold text-blue-900 mb-6">{selectedDisease.name}</h3>
-                                {loading ? (
-                                    <div className="text-center py-12">
-                                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
-                                        <p className="text-gray-600 mt-4">در حال بارگذاری...</p>
-                                    </div>
-                                ) : videos.length === 0 ? (
-                                    <p className="text-center text-gray-600 py-12">فایلی یافت نشد</p>
-                                ) : (
-                                    <div className="space-y-4">
-                                        {videos.map(video => (
-                                            <button
-                                                key={video.id}
-                                                onClick={() => setSelectedVideo(video)}
-                                                className="w-full bg-white p-6 rounded-xl shadow-md hover:shadow-xl transition-all text-right flex items-center gap-4"
-                                            >
-                                                {video.type === 'video' ? <span className="text-blue-600"><Icons.Play /></span> : <span className="text-red-600"><Icons.FileText /></span>}
-                                                <div className="flex-1">
-                                                    <p className="font-bold text-gray-800">{video.name}</p>
-                                                    <p className="text-sm text-gray-500">{video.type === 'video' ? 'ویدیو' : 'PDF'}</p>
-                                                </div>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        // ==================== SymptomsPage Component ====================
-        const SymptomsPage = ({ onBack, userId, showToast }) => {
-            const [symptomType, setSymptomType] = useState(null);
-            const [showHistory, setShowHistory] = useState(false);
-            const [symptomData, setSymptomData] = useState({});
-            const [historyData, setHistoryData] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const [validationError, setValidationError] = useState('');
-
-            const saveSymptom = async (type, value) => {
+       const saveSymptom = async (type, value) => {
                 setLoading(true);
                 try {
                     const response = await fetch(`${CONFIG.API_URL}/api/symptoms`, {
@@ -703,7 +611,17 @@
                     setValidationError(error);
                     return;
                 }
-                saveSymptom(type, finalValue);
+                
+                // بررسی هشدارهای سلامتی
+                const warnings = Validators.checkHealthWarnings(type, finalValue);
+                if (warnings.length > 0) {
+                    const warningMessages = warnings.map(w => w.message).join('\n\n');
+                    if (confirm(`${warningMessages}\n\nآیا می‌خواهید این مقدار را ثبت کنید؟`)) {
+                        saveSymptom(type, finalValue);
+                    }
+                } else {
+                    saveSymptom(type, finalValue);
+                }
             };
 
             const handleBack = () => {
@@ -926,9 +844,9 @@
                 </>
             );
         };
-
-        // ==================== Render App ====================
+       // ==================== Render App ====================
         ReactDOM.render(<App />, document.getElementById('root'));
     </script>
 </body>
-</html>
+</html>                             
+        
