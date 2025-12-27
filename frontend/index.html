@@ -164,101 +164,6 @@
             const chartInstance = useRef(null);
             const containerRef = useRef(null);
 
-            const downloadChart = async () => {
-                if (!containerRef.current) return;
-                
-                try {
-                    const html2canvas = window.html2canvas;
-                    if (!html2canvas) {
-                        alert('خطا: ابزار دانلود بارگذاری نشده است');
-                        return;
-                    }
-                    
-                    const canvas = await html2canvas(containerRef.current, {
-                        backgroundColor: '#ffffff',
-                        scale: 2,
-                        logging: false
-                    });
-                    
-                    // تبدیل به base64
-                    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-                    
-                    // بررسی محیط (مرورگر داخلی یا عادی)
-                    const isInAppBrowser = /eitaa|telegram|whatsapp|instagram|facebook/i.test(navigator.userAgent);
-                    
-                    if (isInAppBrowser) {
-                        // برای مرورگرهای داخلی: نمایش تصویر در تب جدید
-                        const newWindow = window.open();
-                        if (newWindow) {
-                            newWindow.document.write(`
-                                <html dir="rtl">
-                                    <head>
-                                        <title>${title}</title>
-                                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                                        <style>
-                                            body {
-                                                margin: 0;
-                                                padding: 20px;
-                                                background: #f3f4f6;
-                                                font-family: 'Vazirmatn', sans-serif;
-                                                text-align: center;
-                                            }
-                                            h1 {
-                                                color: #1f2937;
-                                                margin-bottom: 20px;
-                                            }
-                                            img {
-                                                max-width: 100%;
-                                                height: auto;
-                                                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                                                border-radius: 8px;
-                                                background: white;
-                                            }
-                                            .info {
-                                                margin-top: 20px;
-                                                padding: 15px;
-                                                background: white;
-                                                border-radius: 8px;
-                                                color: #4b5563;
-                                            }
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <h1>${title}</h1>
-                                        <img src="${imgData}" alt="${title}" />
-                                        <div class="info">
-                                            <p><strong>📱 راهنمای ذخیره تصویر:</strong></p>
-                                            <p>برای ذخیره تصویر، روی آن نگه دارید و گزینه "ذخیره تصویر" را انتخاب کنید</p>
-                                            <p>یا از منوی مرورگر (⋮) گزینه "Share" یا "اشتراک‌گذاری" را انتخاب کنید</p>
-                                        </div>
-                                    </body>
-                                </html>
-                            `);
-                            newWindow.document.close();
-                            alert(`✅ ${title} در پنجره جدید باز شد. روی تصویر نگه دارید و "ذخیره تصویر" را انتخاب کنید.`);
-                        } else {
-                            alert('لطفاً باز شدن پنجره جدید را در تنظیمات مرورگر مجاز کنید');
-                        }
-                    } else {
-                        // برای مرورگرهای عادی: دانلود مستقیم
-                        const link = document.createElement('a');
-                        link.href = imgData;
-                        link.download = `${title.replace(/\s+/g, '_')}.jpg`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        
-                        setTimeout(() => {
-                            alert(`✅ ${title} دانلود شد`);
-                        }, 100);
-                    }
-                    
-                } catch (error) {
-                    console.error('خطا در دانلود:', error);
-                    alert('خطا در دانلود نمودار. لطفاً دوباره تلاش کنید.');
-                }
-            };
-
             useEffect(() => {
                 if (!chartRef.current || !data || data.length === 0) return;
 
@@ -365,7 +270,9 @@
                                     ticks: { 
                                         font: { family: 'Vazirmatn', size: 10 },
                                         maxRotation: 45,
-                                        minRotation: 45
+                                        minRotation: 45,
+                                        autoSkip: true,
+                                        maxTicksLimit: data.length > 15 ? 15 : data.length
                                     },
                                     title: {
                                         display: true,
@@ -475,7 +382,9 @@
                                 ticks: { 
                                     font: { family: 'Vazirmatn', size: 10 },
                                     maxRotation: 45,
-                                    minRotation: 45
+                                    minRotation: 45,
+                                    autoSkip: true,
+                                    maxTicksLimit: data.length > 15 ? 15 : data.length
                                 },
                                 title: {
                                     display: true,
@@ -505,19 +414,17 @@
 
             return (
                 <div ref={containerRef} className="bg-white p-6 rounded-xl shadow-lg mb-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-xl font-bold text-gray-800">{title}</h4>
-                        <button 
-                            onClick={downloadChart}
-                            className="bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-all flex items-center gap-2"
-                            title="دانلود PDF"
-                        >
-                            <Icons.Download />
-                        </button>
+                    <h4 className="text-xl font-bold text-gray-800 mb-4">{title}</h4>
+                    <div style={{ height: '400px', overflowX: 'auto', overflowY: 'hidden' }}>
+                        <div style={{ minWidth: data.length > 10 ? `${data.length * 60}px` : '100%', height: '400px' }}>
+                            <canvas ref={chartRef}></canvas>
+                        </div>
                     </div>
-                    <div style={{ height: '400px' }}>
-                        <canvas ref={chartRef}></canvas>
-                    </div>
+                    {data.length > 10 && (
+                        <p className="text-sm text-gray-500 text-center mt-2">
+                            💡 برای دیدن کامل نمودار، به چپ و راست بکشید
+                        </p>
+                    )}
                 </div>
             );
         };
